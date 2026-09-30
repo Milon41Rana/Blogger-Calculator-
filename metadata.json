@@ -1,0 +1,6 @@
+{
+  "name": "Blogger-Netlify Headless Architecture Technical Report",
+  "description": "Comprehensive technical audit, architecture evaluation, and production XML generator for hosting web applications on Netlify through Blogger iframe shells.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
