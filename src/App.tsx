@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Delete, Copy, Check } from 'lucide-react';
 import { playKeyClick } from './utils/sound';
 
 export default function App() {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [display, setDisplay] = useState('0');
   const [expression, setExpression] = useState('');
   const [operator, setOperator] = useState<string | null>(null);
@@ -10,6 +11,69 @@ export default function App() {
   const [shouldReset, setShouldReset] = useState(false);
   const [isScientific, setIsScientific] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Auto-height notification for Blogger iframe
+  useEffect(() => {
+    const sendHeight = () => {
+      if (typeof window === 'undefined') return;
+      const card = cardRef.current;
+      let actualContentHeight = 0;
+      if (card) {
+        const rect = card.getBoundingClientRect();
+        const paddingY = window.innerWidth >= 640 ? 32 : 24;
+        actualContentHeight = Math.ceil(rect.height + paddingY);
+      } else {
+        actualContentHeight = Math.ceil(
+          Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight,
+            document.body.offsetHeight,
+            document.documentElement.offsetHeight
+          )
+        );
+      }
+
+      if (actualContentHeight > 0) {
+        window.parent.postMessage(
+          {
+            type: 'CALCULATOR_RESIZE',
+            height: actualContentHeight
+          },
+          '*'
+        );
+      }
+    };
+
+    // Initial message on mount
+    sendHeight();
+
+    // ResizeObserver for content size changes
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => {
+        sendHeight();
+      });
+
+      if (cardRef.current) {
+        observer.observe(cardRef.current);
+      }
+      if (document.body) {
+        observer.observe(document.body);
+      }
+    }
+
+    // Viewport resize listener
+    window.addEventListener('resize', sendHeight);
+    const timeoutId = setTimeout(sendHeight, 150);
+
+    return () => {
+      if (observer) {
+        observer.disconnect();
+      }
+      window.removeEventListener('resize', sendHeight);
+      clearTimeout(timeoutId);
+    };
+  }, [isScientific]);
 
   const handleNumber = (digit: string) => {
     playKeyClick('num');
@@ -144,10 +208,10 @@ export default function App() {
   }, [display, operator, prevValue, shouldReset]);
 
   return (
-    <div className="w-full h-screen h-[100dvh] bg-[#090d16] flex items-center justify-center p-3 sm:p-4 overflow-hidden select-none">
+    <div className="w-full min-h-screen bg-[#090d16] flex items-center justify-center p-3 sm:p-4 select-none">
       
       {/* Pure Calculator Card */}
-      <div className="w-full max-w-[380px] bg-[#111827] border border-white/10 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col gap-3">
+      <div ref={cardRef} className="w-full max-w-[380px] bg-[#111827] border border-white/10 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col gap-3">
         
         {/* Top Control Bar */}
         <div className="flex items-center justify-between pb-2 border-b border-white/5 text-xs text-stone-400">
